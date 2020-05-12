@@ -1,7 +1,5 @@
 package sample;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -15,10 +13,12 @@ import java.net.http.HttpResponse;
 public class Requests {
     private HttpClient client;
 
-    final String SERVER_URL = "http://localhost:8001/";
+    private String SERVER_URL;
 
-    Requests(){
+    Requests(String serverIp, String servetPort){
         client = HttpClient.newHttpClient();
+        SERVER_URL = "http://" + serverIp + ":" + servetPort + "/";
+        System.out.println(SERVER_URL);
     }
 
     public byte[] sendGetRequest(String fileId) throws IOException, InterruptedException {

@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class Main {
     public static void main(String[] args) throws IOException {
         ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(20);
-        HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 8001), 0);
+        HttpServer server = HttpServer.create(new InetSocketAddress( 8001), 0);
         server.createContext("/", new requestHandle());
         server.setExecutor(threadPoolExecutor);
         server.start();

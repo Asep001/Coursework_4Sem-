@@ -9,8 +9,12 @@ public class Client {
 
     createWindowsServise createWindowsServise;
 
+    Stage primaryStage;
+
+    Requests requests;
+
     Client(Stage primaryStage){
-        createWindowsServise = new createWindowsServise(primaryStage);
+        this.primaryStage = primaryStage;
     }
 
     public void openRegistration(){
@@ -18,7 +22,11 @@ public class Client {
         createWindowsServise.createRegistrationWindow("Здравствуйте", this);
     }
 
-    public void start() {
+    public void start(String serverIp, String servetPort) {
+
+        requests = new Requests(serverIp, servetPort);
+
+        createWindowsServise = new createWindowsServise(this.primaryStage,this.requests);
         openRegistration();
     }
 }

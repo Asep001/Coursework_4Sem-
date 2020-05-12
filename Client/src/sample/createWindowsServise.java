@@ -16,6 +16,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 
+import javax.print.DocFlavor;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -24,10 +25,10 @@ import java.net.HttpURLConnection;
 public class createWindowsServise {
     Stage primaryStage;
 
+    Requests requests;
 
-    Requests requests = new Requests();
-
-    createWindowsServise(Stage primaryStage){
+    createWindowsServise(Stage primaryStage, Requests requests){
+        this.requests = requests;
         this.primaryStage = primaryStage;
     }
 

@@ -19,7 +19,6 @@ public class Main extends Application {
         Controller controller = loader.getController();
         Client client = new Client(primaryStage);
         controller.setController(client);
-        client.start();
 
     }
 
