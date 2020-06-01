@@ -1,6 +1,7 @@
 package sample;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -13,13 +14,19 @@ public class Main extends Application {
         FXMLLoader loader = new FXMLLoader();
         Parent root = loader.load(getClass().getResource("sample.fxml").openStream());
         primaryStage.setTitle("Cursach");
-        primaryStage.setScene(new Scene(root, 600, 400));
+        primaryStage.setScene(new Scene(root, 430, 400));
         primaryStage.setResizable(false);
         primaryStage.show();
         Controller controller = loader.getController();
         Client client = new Client(primaryStage);
-        controller.setController(client);
+        controller.setController(client, primaryStage);
 
+        primaryStage.setOnCloseRequest(event -> {
+            if (client.isAlive)
+                client.exitFromAcc();
+            Platform.exit();
+            System.exit(0);
+        });
     }
 
 

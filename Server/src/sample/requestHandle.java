@@ -3,52 +3,61 @@ package sample;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import sample.DataBase.DataBaseServecies;
-import sample.DataBase.Registrationable;
+import sample.DataBase.DataBaseInterface;
 
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.util.HashMap;
-import java.util.Map;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Objects;
 
 public class requestHandle implements com.sun.net.httpserver.HttpHandler {
 
-    Map<Long, String> uploadFiles = new HashMap<Long, String>();
-
+    FileTreeProcessServices fileTreeProcessServices = new FileTreeProcessServices();
+    ArrayList<UploadFileInfo> uploadFiles = new  ArrayList<>();
     final String PATH_TO_STORAGE = "./storage/";
 
-    Registrationable dataBaseServecies = new DataBaseServecies();
+    DataBaseInterface dataBaseServices = new DataBaseServecies();
 
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
         String requesParams;
-
         String requestMethod = httpExchange.getRequestMethod();
-
         System.out.println(requestMethod);
-
         requesParams = GetRequestParams(httpExchange);
-
         System.out.println(requesParams);
-
         switch (requestMethod) {
-            case "GET" :
-                handleGETRequest(httpExchange, requesParams);
+            case "GET" : handleGETRequest(httpExchange, requesParams);
                 break;
             case "POST" :{
-                if (requesParams == null)
+                if (requesParams.equals(""))
                     break;
-
-                if (requesParams.equals("singup") || requesParams.equals("login"))
+                if (requesParams.equals("singup") || requesParams.equals("login")) {
                     handleRegistration(httpExchange, requesParams);
-
-                //hendlePostRequest(httpExchange, requesParams);
+                    break;
+                }
+                if (requesParams.equals("regFolder")) {
+                    handleRegFolderRequest(httpExchange);
+                    break;
+                }
+                if (requesParams.equals("isRefreshNeed")) {
+                    handleIsRefreshNeedRequest(httpExchange);
+                    break;
+                }
+                if (requesParams.equals("refresh")) {
+                    handleRefreshRequest(httpExchange);
+                    break;
+                }
+                    handlePostRequest(httpExchange, requesParams);
                 }
                 break;
             case "HEAD" : handleHeadRequest(httpExchange, requesParams);
                 break;
             case "DELETE" : handleDeleteRequest(httpExchange, requesParams);
                 break;
-
         }
 
 
@@ -56,30 +65,31 @@ public class requestHandle implements com.sun.net.httpserver.HttpHandler {
     }
 
     private String GetRequestParams(HttpExchange httpExchange) {
-        if (httpExchange.
-                getRequestURI()
-                .toString()
-                .split("/").length>1)
-            return httpExchange.
-                    getRequestURI()
-                    .toString()
-                    .split("/")[1];
-        return null;
-
+        return httpExchange.getRequestURI().toString().replaceFirst("/","");
     }
 
-    private void handleGETRequest(HttpExchange httpExchange, String requestParamValue)  throws  IOException {
-        OutputStream outputStream = httpExchange.getResponseBody();
+    private File searchFileByID(String  filePath, String clientId){
+        String pathToFile = PATH_TO_STORAGE + clientId + "/" + filePath;
+        System.out.println(pathToFile);
+        return new File(pathToFile);
+    }
 
+    private void handleGETRequest(HttpExchange httpExchange, String fileId)  throws  IOException {
+        OutputStream outputStream = httpExchange.getResponseBody();
         byte[] buf = new byte[64*1024];
 
-        File file = searchFileByID(requestParamValue);
+        Headers headers = httpExchange.getRequestHeaders();
+        String clientId = headers.get("id").get(0);
 
+        String filePath = null;
+        for(UploadFileInfo item : uploadFiles){
+            if (item.getClientId().equals(clientId) && item.getFileId().equals(fileId))
+                filePath = item.getPath();
+        }
+        File file = searchFileByID(filePath, clientId);
         if (!file.exists()) {
-
             httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_NOT_FOUND,-1);
         } else {
-
             httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, file.length());
 
             FileInputStream fileInputStream = new FileInputStream(file.getPath());
@@ -96,9 +106,10 @@ public class requestHandle implements com.sun.net.httpserver.HttpHandler {
 
 
     private void handleHeadRequest(HttpExchange httpExchange, String requestParamValue)  throws  IOException {
-        OutputStream outputStream = httpExchange.getResponseBody();
+        Headers headers = httpExchange.getRequestHeaders();
+        String clientId = headers.get("id").get(0);
 
-        File file = searchFileByID(requestParamValue);
+        File file = searchFileByID(requestParamValue, clientId);
 
         if (!file.exists()) {
             httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_NOT_FOUND,-1);
@@ -109,38 +120,50 @@ public class requestHandle implements com.sun.net.httpserver.HttpHandler {
             httpExchange.getResponseHeaders().add("File ID",Long.toString(file.getName().hashCode()));
 
             httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, -1);
-
         }
-        outputStream.close();
     }
 
-    private void handleDeleteRequest(HttpExchange httpExchange, String requestParamValue) throws IOException {
-        OutputStream outputStream = httpExchange.getResponseBody();
+    private void handleDeleteRequest(HttpExchange httpExchange, String fileId) throws IOException {
+        Headers headers = httpExchange.getRequestHeaders();
+        String clientId = headers.get("id").get(0);
+        String fileName = URLDecoder.decode(headers.get("filename").get(0), StandardCharsets.UTF_8);
+        String filePath = URLDecoder.decode(headers.get("filepath").get(0), StandardCharsets.UTF_8);
+        String absolutePath = URLDecoder.decode(headers.get("absolutepath").get(0), StandardCharsets.UTF_8);
 
-        File file = searchFileByID(requestParamValue);
+        File file = searchFileByID(filePath, clientId);
 
         if (!file.exists()) {
-            httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_NOT_FOUND,0);
+            httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_NOT_FOUND,-1);
         } else {
-            file.delete();
-            httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, 0);
-            uploadFiles.remove(Long.valueOf(requestParamValue));
+            if (file.delete()) {
+                httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, -1);
+                removeFromUploadFiles(new UploadFileInfo(clientId, fileName, filePath, absolutePath, fileId));
+            }
+            else
+                httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_NOT_FOUND,-1);
         }
-        outputStream.close();
     }
 
-    private void hendlePostRequest(HttpExchange httpExchange, String requestParamValue)  {
+    private void removeFromUploadFiles(UploadFileInfo uploadFileInfo){
+        uploadFiles.removeIf(item -> item == uploadFileInfo);
+    }
 
-        File file = new File(PATH_TO_STORAGE+requestParamValue);
+    private void handlePostRequest(HttpExchange httpExchange, String fileId)  {
+        Headers headers = httpExchange.getRequestHeaders();
+        String clientId = headers.get("id").get(0);
+        String fileName = URLDecoder.decode(headers.get("filename").get(0), StandardCharsets.UTF_8);
+        String filePath = URLDecoder.decode(headers.get("filepath").get(0), StandardCharsets.UTF_8);
+        String absolutePath = URLDecoder.decode(headers.get("absolutepath").get(0), StandardCharsets.UTF_8);
 
+        String serverFilePath = createNewFolders(filePath, clientId);
 
-        byte[] fileContent = new byte[0];
+        File file = new File(serverFilePath);
+
+        byte[] fileContent;
         try {
             fileContent = httpExchange.getRequestBody().readAllBytes();
             int responseCode = saveFile(file,fileContent);
-            uploadFiles.put((long) file.getName().hashCode(), file.getName());
-
-            String fileId = Long.toString(requestParamValue.hashCode());
+            uploadFiles.add(new UploadFileInfo(clientId, fileName, filePath, absolutePath, fileId));
 
             httpExchange.sendResponseHeaders(responseCode, fileId.length());
 
@@ -153,36 +176,135 @@ public class requestHandle implements com.sun.net.httpserver.HttpHandler {
         }
     }
 
-    private void handleRegistration(HttpExchange httpExchange, String requestParamValue){
-        Headers headers = httpExchange.getRequestHeaders();
+    private String createNewFolders(String filePath, String clientId){
+        String folders = PATH_TO_STORAGE + clientId + "/";
+        if (filePath == null)
+            return folders;
+        int i;
+        String[] arrOfDir = filePath.split("/");
+        for (i = 0; i<arrOfDir.length-1; i++){
+            try {
+                folders +=(arrOfDir[i] + "/");
+                Files.createDirectories(Paths.get(folders));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
+        }
+        return folders+arrOfDir[arrOfDir.length-1];
+    }
+
+    private void handleRegistration(HttpExchange httpExchange, String requestParamValue){
+        long length = 0;
+        ByteArrayOutputStream byteArrayInputStream = new ByteArrayOutputStream();
+        OutputStream outputStream = httpExchange.getResponseBody();
+
+        Headers headers = httpExchange.getRequestHeaders();
         String clientName = headers.get("name").get(0);
         String clientPassword = headers.get("password").get(0);
 
         String clientId = "-1";
 
         if (requestParamValue.equals("login")){
-           clientId = Long.toString(dataBaseServecies.logInUser(clientName, clientPassword));
+           clientId = Long.toString(dataBaseServices.logInUser(clientName, clientPassword));
         }
         if (requestParamValue.equals("singup")){
-            clientId = Long.toString(dataBaseServecies.registrateUser(clientName, clientPassword));
+            clientId = Long.toString(dataBaseServices.registrateUser(clientName, clientPassword));
+            length = clientId.length();
+            try {
+                byteArrayInputStream.write(clientId.getBytes());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         int responseCode;
-
         if (clientId.equals("-1"))
             responseCode = HttpURLConnection.HTTP_BAD_REQUEST;
         else
             responseCode = HttpURLConnection.HTTP_OK;
-
+        createNewFolders( null,clientId);
         try {
-            httpExchange.sendResponseHeaders(responseCode, clientId.length());
-            OutputStream outputStream = httpExchange.getResponseBody();
-            outputStream.write(clientId.getBytes());
+            httpExchange.getResponseHeaders().add("id", clientId);
+
+            httpExchange.sendResponseHeaders(responseCode, length);
+
+            outputStream.write(byteArrayInputStream.toByteArray());
             outputStream.flush();
             outputStream.close();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void handleRegFolderRequest(HttpExchange httpExchange)  {
+        try {
+            Headers headers = httpExchange.getRequestHeaders();
+            String id = headers.get("id").get(0);
+            String folderName = headers.get("foldername").get(0);
+            String mac = headers.get("mac").get(0);
+            String path = headers.get("path").get(0);
+
+            int responseCode = dataBaseServices.regFolder(id, folderName, mac, path);
+
+            httpExchange.sendResponseHeaders(responseCode, -1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void handleRefreshRequest(HttpExchange httpExchange){
+        OutputStream outputStream = httpExchange.getResponseBody();
+        Headers headers = httpExchange.getRequestHeaders();
+        String clientId = headers.get("id").get(0);
+
+        ByteArrayOutputStream byteArrayInputStream = new ByteArrayOutputStream();
+
+        File file;
+
+        long length;
+
+        if (!clientId.equals("-1")) {
+            makeXMLFile(PATH_TO_STORAGE + clientId, PATH_TO_STORAGE + clientId + "/output.xml", clientId);
+            file = new File(PATH_TO_STORAGE + clientId + "/output.xml");
+            length = file.length();
+            int responseCode = HttpURLConnection.HTTP_OK;
+            try {
+                FileInputStream fileInputStream = new FileInputStream(file);
+                byteArrayInputStream.write(fileInputStream.readAllBytes());
+                httpExchange.sendResponseHeaders(responseCode, length);
+                outputStream.write(byteArrayInputStream.toByteArray());
+                outputStream.flush();
+                outputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void handleIsRefreshNeedRequest(HttpExchange httpExchange){
+        try {
+            Headers headers = httpExchange.getRequestHeaders();
+            String id = headers.get("id").get(0);
+            String mac = headers.get("mac").get(0);
+            String path = dataBaseServices.getFolder(id, mac);
+
+            path = path == null ? "-1" : path;
+
+            int responseCode = path.equals("-1") ? HttpURLConnection.HTTP_NOT_FOUND : HttpURLConnection.HTTP_OK;
+
+            httpExchange.getResponseHeaders().add("path", path);
+
+            httpExchange.sendResponseHeaders(responseCode, -1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void makeXMLFile(String path, String name, String clientId){
+        File dir = new File(path);
+        String folderName = Objects.requireNonNull(dir.listFiles())[0].getName();
+        fileTreeProcessServices.makeDirectoryTree(Paths.get(path + "/" + folderName), name , clientId, uploadFiles);
     }
 
 
@@ -201,11 +323,5 @@ public class requestHandle implements com.sun.net.httpserver.HttpHandler {
     }
 
 
-    private File searchFileByID(String  fileId){
-        System.out.println( uploadFiles.values());
 
-        String pathToFile = PATH_TO_STORAGE+uploadFiles.get(Long.valueOf(fileId));
-        System.out.println(pathToFile);
-        return new File(pathToFile);
-    }
 }
