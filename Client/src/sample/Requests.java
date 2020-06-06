@@ -35,9 +35,10 @@ public class Requests {
         return response.body();
     }
 
-    public String[] sendHeadRequest(Long fileID) throws IOException, InterruptedException {
+    public String[] sendHeadRequest(String fileID, String clientId) throws IOException, InterruptedException {
         var request = HttpRequest.newBuilder (URI.create (SERVER_URL+fileID))
                 .method ("HEAD", HttpRequest.BodyPublishers.noBody ())
+                .header("id", clientId)
                 .build ();
 
         HttpResponse <String> response = client.send (request,
@@ -45,15 +46,17 @@ public class Requests {
 
         HttpHeaders headers = response.headers();
 
-        String[] fileName = new String[2];
+
+
+        String[] fileInfo = new String[2];
         if (response.statusCode() == HttpURLConnection.HTTP_OK) {
-            fileName[0] = headers.allValues("file name").get(0);
-            fileName[1] = headers.allValues("content-length").get(0);
+            fileInfo[0] = headers.allValues("name").get(0);
+            fileInfo[1] = headers.allValues("content-length").get(0);
         }
         else
-            fileName[0] = "Файл отсутствует";
+            fileInfo[0] = "Файл отсутствует";
 
-        return fileName;
+        return fileInfo;
     }
 
     public int deleteFile(String filePath, String clientId, String fileName, long fileId, String absolutePath) throws IOException, InterruptedException {

@@ -10,13 +10,14 @@
 <AnchorPane fx:id="back" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="430.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Controller">
    <children>
       <Button fx:id="exit" layoutX="14.0" layoutY="360.0" mnemonicParsing="false" onAction="#ExitFormProfile" prefHeight="26.0" prefWidth="108.0" text="Выйти" />
-      <TextField fx:id="ipField" layoutX="14.0" layoutY="14.0" promptText="serverIp" text="192.168.100.6" />
-      <TextField fx:id="portField" layoutX="14.0" layoutY="53.0" promptText="serverPort" text="8001" />
+      <TextField fx:id="ipField" layoutX="14.0" layoutY="14.0" promptText="serverIp" />
+      <TextField fx:id="portField" layoutX="14.0" layoutY="53.0" promptText="serverPort" />
       <Button fx:id="connectBtn" layoutX="172.0" layoutY="13.0" mnemonicParsing="false" onAction="#connectToTheServer" prefHeight="26.0" prefWidth="108.0" text="Подключиться" />
       <TreeView fx:id="foldersTreeView" layoutX="14.0" layoutY="87.0" prefHeight="263.0" prefWidth="366.0" />
       <Button fx:id="refreshBtn" layoutX="380.0" layoutY="87.0" mnemonicParsing="false" onAction="#refresh" />
       <ChoiceBox fx:id="delayChoice" layoutX="311.0" layoutY="53.0" prefHeight="25.0" prefWidth="108.0" />
       <Text layoutX="179.0" layoutY="70.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Интервал обновления" />
       <Button fx:id="styleBtn" layoutX="311.0" layoutY="361.0" mnemonicParsing="false" onAction="#changeStyle" prefHeight="25.0" prefWidth="108.0" text="Изменить цвет" />
+      <Button fx:id="helpBtn" layoutX="161.0" layoutY="360.0" mnemonicParsing="false" onAction="#help" prefHeight="26.0" prefWidth="108.0" text="Помощь" />
    </children>
 </AnchorPane>

@@ -20,7 +20,6 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Timer;
-import java.util.zip.ZipInputStream;
 
 public class Client {
 
@@ -74,11 +73,12 @@ public class Client {
     }
 
     public void loadDirectory(){
-        final ProgressDialog progress = new ProgressDialog();
+        ProgressDialog progress = null;
         File dir = directoryChooser.showDialog(this.primaryStage);
         if (dir == null)
             return;
         try {
+            progress = new ProgressDialog();
             progress.showDialog();//запуск прогресс бара
             mainDirectory = dir.getPath();
             mainDirectory = mainDirectory.replaceAll("\\\\","/");
@@ -354,12 +354,13 @@ public class Client {
                 boolean isFolder = fileId.equals("-1");
 
                 if(!isFolder)
-                    downloadFiles(fileId, fileName);
+                    //downloadFiles(fileId, fileName);
+                    createWindowsService.createAdditionalMenuForFile(fileId, fileName);
             }
         }
     }
 
-    private void downloadFiles(String fileId, String fileName){
+    public void downloadFiles(String fileId, String fileName){
         byte[] buf;
         try {
             buf = requests.sendGetRequest(fileId, Long.toString(id));
@@ -383,6 +384,21 @@ public class Client {
             }
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
+        }
+    }
+
+    public void getFileInfo(String fileId, String fileName){
+        String[] fileInfo;
+        try {
+            String infoString;
+            fileInfo = requests.sendHeadRequest(fileId, Long.toString(id));
+            if (!fileInfo[0].equals("Файл отсутствует"))
+                infoString = "Имя файла: " + fileName + ";\nРазмер файла: " + fileInfo[1];
+            else
+                infoString = "Имя файла: " + fileInfo[0];
+            createWindowsService.createWindowWithLabel(infoString);
+            } catch (InterruptedException | IOException ex) {
+            ex.printStackTrace();
         }
     }
 

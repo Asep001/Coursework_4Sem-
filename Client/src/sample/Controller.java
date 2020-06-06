@@ -21,9 +21,13 @@ public class Controller {
     public Button refreshBtn;
     public ChoiceBox<String> delayChoice;
     public Button styleBtn;
+    public Button helpBtn;
 
     private Client client;
     Stage primaryStage;
+
+    final String SERVER_IP = "192.168.43.48";
+    final String SERVER_PORT = "8001";
 
     public void setController(Client client, Stage primaryStage) throws MalformedURLException {
         this.client = client;
@@ -32,8 +36,12 @@ public class Controller {
         refreshBtn.setDisable(true);
         styleBtn.setDisable(true);
         delayChoice.setDisable(true);
+        helpBtn.setDisable(true);
 
         setImageToRefreshBtn("images/refresh.png");
+
+        ipField.setText(SERVER_IP);
+        portField.setText(SERVER_PORT);
 
         setChoiceBox();
     }
@@ -76,6 +84,7 @@ public class Controller {
         refreshBtn.setDisable(false);
         styleBtn.setDisable(false);
         delayChoice.setDisable(false);
+        helpBtn.setDisable(false);
     }
 
     public void refresh() throws IOException, InterruptedException {
@@ -85,6 +94,22 @@ public class Controller {
     public void changeStyle(){
         Parent parent = refreshBtn.getParent();
         client.createWindowsService.createStyleChooser(parent);
+    }
+
+    public void help(){
+        String helpString = "Уважаемый пользователь, здравствуйте!\n" +
+                "Вы перешли в меню помщи.\n" +
+                "Для того  чтобы скачать файл или получить информацию о нём\n" +
+                "нажмину дважды на необходимый вайм файл. После этого \n" +
+                "на экране появится покошко с выбором действия\n" +
+                "и выберете необходимое вам.\n" +
+                "Для обновления необходимо нажать на кнопку со стрелочкой\n" +
+                "справа вверху от области выбора файла.\n" +
+                "Для выхода из учётной записи нажмите на кнопку \"Выход\".\n" +
+                "Для изменения фора окна нажмите на кнопку \"Изменение цвета\"\n" +
+                "и в появившемся меню выберите цвет.";
+
+        client.createWindowsService.createWindowWithLabel(helpString);
     }
 
 

@@ -105,18 +105,23 @@ public class requestHandle implements com.sun.net.httpserver.HttpHandler {
     }
 
 
-    private void handleHeadRequest(HttpExchange httpExchange, String requestParamValue)  throws  IOException {
+    private void handleHeadRequest(HttpExchange httpExchange, String fileId)  throws  IOException {
         Headers headers = httpExchange.getRequestHeaders();
         String clientId = headers.get("id").get(0);
 
-        File file = searchFileByID(requestParamValue, clientId);
-
+        String filePath = null;
+        for(UploadFileInfo item : uploadFiles){
+            if (item.getClientId().equals(clientId) && item.getFileId().equals(fileId))
+                filePath = item.getPath();
+        }
+        File file = searchFileByID(filePath, clientId);
         if (!file.exists()) {
             httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_NOT_FOUND,-1);
         } else {
 
-            httpExchange.getResponseHeaders().add("Content-Length",Long.toString(file.length()));
-            httpExchange.getResponseHeaders().add("File Name",file.getName());
+
+            httpExchange.getResponseHeaders().add("content-length",Long.toString(file.length()));
+            httpExchange.getResponseHeaders().add("name",file.getName());
             httpExchange.getResponseHeaders().add("File ID",Long.toString(file.getName().hashCode()));
 
             httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, -1);

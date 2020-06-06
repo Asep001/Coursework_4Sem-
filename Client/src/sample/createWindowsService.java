@@ -32,13 +32,13 @@ public class createWindowsService {
 
     public void createRegistrationWindow(String fileName){
         TextField nameField = new TextField();
-        nameField.setPromptText("Insert your name");
+        nameField.setPromptText("Введите ваш логин");
 
         TextField passwordField = new TextField();
-        passwordField.setPromptText("Insert your password");
+        passwordField.setPromptText("Ввелите ваш пароль");
 
         Button singIn = new Button();
-        singIn.setText("SingIn");
+        singIn.setText("Регистрация");
         singIn.setOnAction(event -> {
             try {
                 String name = nameField.getText();
@@ -62,7 +62,7 @@ public class createWindowsService {
         });
 
         Button logIn = new Button();
-        logIn.setText("LogIn");
+        logIn.setText("Войти");
         logIn.setOnAction(event -> {
             try {
                 String name = nameField.getText();
@@ -91,6 +91,19 @@ public class createWindowsService {
             }
         });
 
+
+        Button help = new Button();
+        help.setText("Помощь");
+        help.setOnAction(event -> {
+            String helpStr = "Для того чтобы зарегстрировать пользователя\n" +
+                    "необходимо нажать на кнопку \"Зарегистрироваться\", \n" +
+                    "после этого вам будет предложено выбрать папку,\n" +
+                    "которую вы хотите синхронизировать.\n" +
+                    "Для входи в аккаутн необходимо заполнить все поля \n" +
+                    "и нажать на кнопку \"Войти\"";
+            client.createWindowsService.createWindowWithLabel(helpStr);
+        });
+
         StackPane secondaryLayout = new StackPane();
 
         secondaryLayout.getChildren().add(singIn);
@@ -98,6 +111,9 @@ public class createWindowsService {
 
         secondaryLayout.getChildren().add(logIn);
         StackPane.setAlignment(logIn, Pos.BOTTOM_RIGHT);
+
+        secondaryLayout.getChildren().add(help);
+        StackPane.setAlignment(help, Pos.BOTTOM_CENTER);
 
         secondaryLayout.getChildren().add(nameField);
         StackPane.setAlignment(nameField, Pos.TOP_CENTER);
@@ -132,7 +148,16 @@ public class createWindowsService {
         Label secondLabel = new Label(label);
         StackPane secondaryLayout = new StackPane();
         secondaryLayout.getChildren().add(secondLabel);
-        Scene secondScene = new Scene(secondaryLayout, 230, 100);
+
+        int width = 230;
+        int height = 100;
+        if (label.length()>70){
+            width = 400;
+            height = 300;
+        }
+
+
+        Scene secondScene = new Scene(secondaryLayout, width, height);
         Stage newWindow = new Stage();
         newWindow.setTitle("INFO");
         newWindow.setScene(secondScene);
@@ -166,6 +191,7 @@ public class createWindowsService {
             @Override
             public void handle(ActionEvent event) {
                 client.setTreeColor(treeColor.getValue());
+
             }
         });
 
@@ -186,6 +212,46 @@ public class createWindowsService {
         Scene secondScene = new Scene(secondaryLayout, 350, 100);
         Stage newWindow = new Stage();
         newWindow.setTitle("Изменение цвета");
+        newWindow.setScene(secondScene);
+        newWindow.initModality(Modality.WINDOW_MODAL);
+        newWindow.initOwner(primaryStage);
+        newWindow.setX(primaryStage.getX() + 200);
+        newWindow.setY(primaryStage.getY() + 100);
+        newWindow.show();
+    }
+
+    public void createAdditionalMenuForFile(String fileId, String fileName){
+
+        Label secondLabel = new Label(fileName);
+
+        Button downloadBtn = new Button();
+        downloadBtn.setText("Загрузить файл");
+        downloadBtn.setOnAction(event -> {
+            client.downloadFiles(fileId, fileName);
+            Stage stage = (Stage) downloadBtn.getScene().getWindow();
+            stage.close();
+        });
+
+        Button infoBtn = new Button();
+        infoBtn.setText("Информация о файле");
+        infoBtn.setOnAction(event -> {
+            client.getFileInfo(fileId, fileName);
+        });
+
+        StackPane secondaryLayout = new StackPane();
+
+        secondaryLayout.getChildren().add(secondLabel);
+        StackPane.setAlignment(secondLabel, Pos.TOP_CENTER);
+
+        secondaryLayout.getChildren().add(downloadBtn);
+        StackPane.setAlignment(downloadBtn, Pos.CENTER);
+
+        secondaryLayout.getChildren().add(infoBtn);
+        StackPane.setAlignment(infoBtn, Pos.BOTTOM_CENTER);
+
+        Scene secondScene = new Scene(secondaryLayout, 230, 100);
+        Stage newWindow = new Stage();
+        newWindow.setTitle("INFO");
         newWindow.setScene(secondScene);
         newWindow.initModality(Modality.WINDOW_MODAL);
         newWindow.initOwner(primaryStage);
